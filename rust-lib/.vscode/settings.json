@@ -1,0 +1,13 @@
+{
+    "rust-analyzer.cargoRunner": null,
+    "rust-analyzer.cargo.target": "thumbv6m-none-eabi",
+    "rust-analyzer.checkOnSave.allTargets": false,
+    "rust-analyzer.checkOnSave.extraArgs": [
+        "--target",
+        "thumbv7m-none-eabi"
+    ],
+    "rust-analyzer.cargo.unsetTest": [
+        "rust_lib"
+    ],
+    "editor.formatOnSave": true
+}

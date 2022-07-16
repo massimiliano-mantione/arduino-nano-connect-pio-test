@@ -1,0 +1,14 @@
+[build]
+# Set the default target to match the Cortex-M0+ in the RP2040
+target = "thumbv6m-none-eabi"
+
+# Target specific options
+[target.thumbv6m-none-eabi]
+# Pass some extra options to rustc.
+# * inline-threshold=5 makes the compiler more aggressive and inlining functions
+# * no-vectorize-loops turns off the loop vectorizer (seeing as the M0+ doesn't
+#   have SIMD)
+rustflags = [
+    "-C", "inline-threshold=5",
+    "-C", "no-vectorize-loops",
+]
