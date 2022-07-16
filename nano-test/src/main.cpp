@@ -1,4 +1,9 @@
 #include <Arduino.h>
+#include <Wire.h>
+#include <SPI.h>
+#include <ArduinoBLE.h>
+#include <Arduino_LSM6DSOX.h>
+#include <vl53lx_class.h>
 
 void setup() {
   Serial.begin(115200);
