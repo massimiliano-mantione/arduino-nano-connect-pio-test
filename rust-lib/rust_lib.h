@@ -1,2 +1,2 @@
 
-extern "C" int double_input(int input);
+extern "C" void print_tick(int tick);
