@@ -4,10 +4,12 @@
 #include "stdio.h"
 #include "hardware/pio.h"
 #include "hardware/i2c.h"
-#define SOFTWARE_I2C 1
+//#define SOFTWARE_I2C 0
 
 
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 enum i2c_mode{
 	I2C_MODE_16_8 = 0,
@@ -48,4 +50,8 @@ void arducam_capture_frame(struct arducam_config *config);
 void arducam_reg_write(struct arducam_config *config, uint16_t reg, uint8_t value);
 uint8_t arducam_reg_read(struct arducam_config *config, uint16_t reg);
 void arducam_regs_write(struct arducam_config *config, struct senosr_reg* regs_list);
+#endif
+
+#ifdef __cplusplus
+}
 #endif

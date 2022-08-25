@@ -10,13 +10,13 @@
 
 
 
-int PIN_LED = 25;
-int PIN_CAM_SIOC = 5; // I2C0 SCL
-int PIN_CAM_SIOD = 4; // I2C0 SDA
-int PIN_CAM_RESETB = 2;
-int PIN_CAM_XCLK = 3;
-int PIN_CAM_VSYNC = 16;     //GP15 hsync  GP14 pixel clock     
-int PIN_CAM_Y2_PIO_BASE = 6;   // data GPIO6
+int PIN_LED = 6;         // PI 25
+int PIN_CAM_SIOC = 13;   // PI  4 I2C0 SCL
+int PIN_CAM_SIOD = 12;   // PI  5 I2C0 SDA
+int PIN_CAM_RESETB = 18; // PI  2
+int PIN_CAM_XCLK = 19;   // PI  3
+int PIN_CAM_VSYNC = 20;  // PI 16 GP15 hsync  GP14 pixel clock     
+int PIN_CAM_Y2_PIO_BASE = 6;   // PI 6 (unused) data GPIO6
 
 
 

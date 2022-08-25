@@ -1,6 +1,8 @@
 #![no_std]
 use core::{convert::Infallible, panic::PanicInfo};
 
+pub mod ffi;
+
 use arrayvec::ArrayString;
 use ufmt::uWrite;
 
