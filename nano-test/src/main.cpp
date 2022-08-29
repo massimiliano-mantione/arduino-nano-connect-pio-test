@@ -5,8 +5,8 @@
 #include <Arduino_LSM6DSOX.h>
 #include <vl53lx_class.h>
 #include <arducam.h>
+#include "Adafruit_VL53L0X.h"
 
-#include <vl53lx_class.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -62,7 +62,17 @@ void setup_with_arducam() {
 	arducam_init(&config);
 }
 
-void setup() {
+// VL53LX_GetDistanceMode
+// VL53LX_SetMeasurementTimingBudgetMicroSeconds
+// VL53LX_set_inter_measurement_period_ms
+// VL53LX_get_inter_measurement_period_ms
+// VL53LX_set_zone_config
+// VL53LX_set_preset_mode
+// VL53LX_set_zone_preset
+// VL53LX_get_measurement_results
+
+
+void setup_with_VL53LX() {
   Serial.begin(115200);
 
   pinMode(LedPin, OUTPUT);
@@ -81,6 +91,9 @@ void setup() {
    //Initialize VL53LX satellite component.
    sensor_vl53lx_sat.InitSensor(0x12);
 
+   //sensor_vl53lx_sat.VL53LX_set_zone_preset(VL53LX_DEVICEZONEPRESET_2X2_SIZE_8X8);
+   //sensor_vl53lx_sat.VL53LX_set_preset_mode(VL53LX_DEVICEPRESETMODE_HISTOGRAM_MULTIZONE_LONG_RANGE);
+
    // Start Measurements
    sensor_vl53lx_sat.VL53LX_StartMeasurement();
 }
@@ -93,7 +106,82 @@ void loop_test_ffi() {
   sleep_ms(1000);
 }
 
-void loop()
+Adafruit_VL53L0X lox = Adafruit_VL53L0X();
+
+void setup() {
+  Serial.begin(115200);
+
+  // wait until serial port opens for native USB devices
+  while (! Serial) {
+    delay(1);
+  }
+
+  Serial.println("Adafruit VL53L0X test.");
+  if (!lox.begin()) {
+    Serial.println(F("Failed to boot VL53L0X"));
+    while(1);
+  }
+  // power
+  Serial.println(F("VL53L0X API Continuous Ranging example\n\n"));
+
+  // start continuous ranging
+  lox.startRangeContinuous();
+}
+
+void print_multi_ranging_data(VL53LX_MultiRangingData_t *pMultiRangingData) {
+      uint8_t count=pMultiRangingData->StreamCount;
+      uint8_t no_of_object_found=pMultiRangingData->NumberOfObjectsFound;
+      SerialPort.print("count=");
+      SerialPort.print(count);
+      SerialPort.print(", objs=");
+      SerialPort.print(no_of_object_found);
+      for(int j=0;j<no_of_object_found;j++)
+      {
+         if(j!=0)SerialPort.print("\r\n                               ");
+         SerialPort.print(" [status=");
+         SerialPort.print(pMultiRangingData->RangeData[j].RangeStatus);
+         SerialPort.print(", D=");
+         SerialPort.print(pMultiRangingData->RangeData[j].RangeMilliMeter);
+         SerialPort.print("mm");
+         SerialPort.print(", Signal=");
+         SerialPort.print((float)pMultiRangingData->RangeData[j].SignalRateRtnMegaCps/65536.0);
+         SerialPort.print(" Mcps, Ambient=");
+         SerialPort.print((float)pMultiRangingData->RangeData[j].AmbientRateRtnMegaCps/65536.0);
+         SerialPort.print(" Mcps]");
+      }
+
+}
+
+void print_zone_objects(VL53LX_zone_objects_t* zone_objects) {
+   SerialPort.print("[zid ");
+   SerialPort.print(zone_objects->zone_id);
+   if (zone_objects->cfg_device_state != 0) {
+      SerialPort.print("cfg ");
+      SerialPort.print(zone_objects->cfg_device_state);
+   }
+   if (zone_objects->rd_device_state != 0) {
+      SerialPort.print("rd ");
+      SerialPort.print(zone_objects->rd_device_state);
+   }
+   SerialPort.print("c ");
+   SerialPort.print(zone_objects->stream_count);
+   SerialPort.print("a ");
+   SerialPort.print(zone_objects->active_objects);
+   for (int o = 0; o < zone_objects->active_objects; o++) {
+      SerialPort.print("(011 -> ");
+      SerialPort.print(zone_objects->VL53LX_p_003[o].VL53LX_p_011);
+      SerialPort.print("(016 -> ");
+      SerialPort.print(zone_objects->VL53LX_p_003[o].VL53LX_p_016);
+      SerialPort.print("(017 -> ");
+      SerialPort.print(zone_objects->VL53LX_p_003[o].VL53LX_p_017);
+      SerialPort.print("s -> ");
+      SerialPort.print(zone_objects->VL53LX_p_003[o].range_status);
+      SerialPort.print(")");
+   }
+
+}
+
+void loop_with_VL53LX()
 {
    VL53LX_MultiRangingData_t MultiRangingData;
    VL53LX_MultiRangingData_t *pMultiRangingData = &MultiRangingData;
@@ -113,23 +201,14 @@ void loop()
    if((!status)&&(NewDataReady!=0))
    {
       status = sensor_vl53lx_sat.VL53LX_GetMultiRangingData(pMultiRangingData);
-      no_of_object_found=pMultiRangingData->NumberOfObjectsFound;
-      snprintf(report, sizeof(report), "VL53LX Satellite: Count=%d, #Objs=%1d ", pMultiRangingData->StreamCount, no_of_object_found);
-      SerialPort.print(report);
-      for(j=0;j<no_of_object_found;j++)
-      {
-         if(j!=0)SerialPort.print("\r\n                               ");
-         SerialPort.print("status=");
-         SerialPort.print(pMultiRangingData->RangeData[j].RangeStatus);
-         SerialPort.print(", D=");
-         SerialPort.print(pMultiRangingData->RangeData[j].RangeMilliMeter);
-         SerialPort.print("mm");
-         SerialPort.print(", Signal=");
-         SerialPort.print((float)pMultiRangingData->RangeData[j].SignalRateRtnMegaCps/65536.0);
-         SerialPort.print(" Mcps, Ambient=");
-         SerialPort.print((float)pMultiRangingData->RangeData[j].AmbientRateRtnMegaCps/65536.0);
-         SerialPort.print(" Mcps");
-      }
+      print_multi_ranging_data(pMultiRangingData);
+
+      //VL53LX_zone_results_t  zone_results;
+      //sensor_vl53lx_sat.V53L1_get_zone_results(&zone_results);
+      //for (int z = 0; z < zone_results.active_zones; z++) {
+      //   print_zone_objects(&zone_results.VL53LX_p_003[z]);
+      //}
+
       SerialPort.println("");
       if (status==0)
       {
@@ -138,4 +217,11 @@ void loop()
    }
 
    digitalWrite(LedPin, LOW);
+}
+
+void loop() {
+  if (lox.isRangeComplete()) {
+    Serial.print("Distance in mm: ");
+    Serial.println(lox.readRange());
+  }
 }
