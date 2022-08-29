@@ -91,6 +91,12 @@ void setup_with_VL53LX() {
    //Initialize VL53LX satellite component.
    sensor_vl53lx_sat.InitSensor(0x12);
 
+   // Public setup API (where should it be invoked? how should it be used?)
+   // sensor_vl53lx_sat.SetPresetModeL3CX(VL53LX_DISTANCEMODE_MEDIUM, 0);
+   // sensor_vl53lx_sat.VL53LX_run_zone_calibration(
+   //   VL53LX_DEVICEPRESETMODE_NONE,
+   //   VL53LX_DEVICEZONEPRESET_XTALK_PLANAR, NULL, 0, 0, NULL);
+
    //sensor_vl53lx_sat.VL53LX_set_zone_preset(VL53LX_DEVICEZONEPRESET_2X2_SIZE_8X8);
    //sensor_vl53lx_sat.VL53LX_set_preset_mode(VL53LX_DEVICEPRESETMODE_HISTOGRAM_MULTIZONE_LONG_RANGE);
 
