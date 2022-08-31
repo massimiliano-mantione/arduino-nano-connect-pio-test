@@ -114,7 +114,7 @@ void loop_test_ffi() {
 
 Adafruit_VL53L0X lox = Adafruit_VL53L0X();
 
-void setup() {
+void setup_with_vl53l0x() {
   Serial.begin(115200);
 
   // wait until serial port opens for native USB devices
@@ -124,15 +124,73 @@ void setup() {
 
   Serial.println("Adafruit VL53L0X test.");
   if (!lox.begin()) {
-    Serial.println(F("Failed to boot VL53L0X"));
+    Serial.println("Failed to boot VL53L0X");
     while(1);
   }
   // power
-  Serial.println(F("VL53L0X API Continuous Ranging example\n\n"));
+  Serial.println("VL53L0X API Continuous Ranging example\n\n");
 
   // start continuous ranging
   lox.startRangeContinuous();
 }
+
+const char* ble_service_uuid = "934642e9-db09-4802-90b2-aec03c8bd146";
+const char* ble_characteristic_data_uuid = "2a47b36e-3e2e-496f-9a8e-2f14313acb53";
+const char* ble_characteristic_command_uuid = "2d4b86f0-2342-4d67-8734-9c2ca4b380d6";
+
+#define BLE_CHARACTERISTIC_DATA_LENGTH 500
+#define BLE_CHARACTERISTIC_COMMAND_LENGTH 50
+uint8_t ble_characteristic_data_bytes[BLE_CHARACTERISTIC_DATA_LENGTH + 1];
+uint8_t ble_characteristic_command_bytes[BLE_CHARACTERISTIC_COMMAND_LENGTH + 1];
+
+BLEService ble_service(ble_service_uuid);
+BLECharacteristic ble_characteristic_data(
+      ble_characteristic_data_uuid,
+      BLERead | BLENotify,
+      BLE_CHARACTERISTIC_DATA_LENGTH,
+      false
+   );
+BLECharacteristic ble_characteristic_command(
+      ble_characteristic_command_uuid,
+      BLEWrite,
+      BLE_CHARACTERISTIC_COMMAND_LENGTH,
+      false
+   );
+
+void setup_with_ble() {
+   Serial.begin(115200);
+
+   // wait until serial port opens for native USB devices
+   while (! Serial) {
+      delay(1);
+   }
+
+   Serial.println("INIT ble_characteristic_data_bytes");
+   memset(ble_characteristic_data_bytes, ' ', BLE_CHARACTERISTIC_DATA_LENGTH);
+   ble_characteristic_data_bytes[BLE_CHARACTERISTIC_DATA_LENGTH] = 0;
+
+   Serial.println("INIT ble_characteristic_command_bytes");
+   memset(ble_characteristic_command_bytes, ' ', BLE_CHARACTERISTIC_COMMAND_LENGTH);
+   ble_characteristic_command_bytes[BLE_CHARACTERISTIC_COMMAND_LENGTH] = 0;
+
+   Serial.println("SETUP ble_service");
+   ble_service.addCharacteristic(ble_characteristic_data);
+   ble_service.addCharacteristic(ble_characteristic_command);
+
+   Serial.println("BLE begin");
+   if (!BLE.begin()) {
+      Serial.println("starting Bluetooth® Low Energy failed!");
+      while(false);
+   }
+   BLE.setLocalName("BLE test device");
+   BLE.setAdvertisedService(ble_service);
+   BLE.addService(ble_service);
+   BLE.setConnectable(true);
+   BLE.advertise();
+
+   Serial.println("BLE waiting for connections");
+}
+
 
 void print_multi_ranging_data(VL53LX_MultiRangingData_t *pMultiRangingData) {
       uint8_t count=pMultiRangingData->StreamCount;
@@ -155,35 +213,6 @@ void print_multi_ranging_data(VL53LX_MultiRangingData_t *pMultiRangingData) {
          SerialPort.print((float)pMultiRangingData->RangeData[j].AmbientRateRtnMegaCps/65536.0);
          SerialPort.print(" Mcps]");
       }
-
-}
-
-void print_zone_objects(VL53LX_zone_objects_t* zone_objects) {
-   SerialPort.print("[zid ");
-   SerialPort.print(zone_objects->zone_id);
-   if (zone_objects->cfg_device_state != 0) {
-      SerialPort.print("cfg ");
-      SerialPort.print(zone_objects->cfg_device_state);
-   }
-   if (zone_objects->rd_device_state != 0) {
-      SerialPort.print("rd ");
-      SerialPort.print(zone_objects->rd_device_state);
-   }
-   SerialPort.print("c ");
-   SerialPort.print(zone_objects->stream_count);
-   SerialPort.print("a ");
-   SerialPort.print(zone_objects->active_objects);
-   for (int o = 0; o < zone_objects->active_objects; o++) {
-      SerialPort.print("(011 -> ");
-      SerialPort.print(zone_objects->VL53LX_p_003[o].VL53LX_p_011);
-      SerialPort.print("(016 -> ");
-      SerialPort.print(zone_objects->VL53LX_p_003[o].VL53LX_p_016);
-      SerialPort.print("(017 -> ");
-      SerialPort.print(zone_objects->VL53LX_p_003[o].VL53LX_p_017);
-      SerialPort.print("s -> ");
-      SerialPort.print(zone_objects->VL53LX_p_003[o].range_status);
-      SerialPort.print(")");
-   }
 
 }
 
@@ -225,9 +254,54 @@ void loop_with_VL53LX()
    digitalWrite(LedPin, LOW);
 }
 
-void loop() {
+void loop_with_vl53l0x() {
   if (lox.isRangeComplete()) {
     Serial.print("Distance in mm: ");
     Serial.println(lox.readRange());
   }
+}
+
+void loop_with_ble() {
+   Serial.println("Waiting for central...");
+
+   // listen for BLE peripherals to connect:
+   BLEDevice central = BLE.central();
+   // if a central is connected to peripheral:
+   if (central) {
+      Serial.print("Connected to central: ");
+      // print the central's MAC address:
+      Serial.println(central.address());
+      
+      // while the central is still connected to peripheral:
+      int tick = 0;
+      while (central.connected()) {
+         memset(ble_characteristic_data_bytes, ' ', BLE_CHARACTERISTIC_DATA_LENGTH);
+         ble_characteristic_data_bytes[BLE_CHARACTERISTIC_DATA_LENGTH] = 0;
+         ble_characteristic_data_bytes[tick] = 'X';
+         tick += 1;
+         tick = tick % BLE_CHARACTERISTIC_DATA_LENGTH;
+         ble_characteristic_data.writeValue(ble_characteristic_data_bytes, BLE_CHARACTERISTIC_DATA_LENGTH, false);
+
+         memcpy(ble_characteristic_command_bytes, ble_characteristic_command.value(), BLE_CHARACTERISTIC_COMMAND_LENGTH);
+         ble_characteristic_command_bytes[BLE_CHARACTERISTIC_COMMAND_LENGTH] = 0;
+         Serial.print("tick: ");
+         Serial.print(tick);
+         Serial.print(" command: ");
+         Serial.print((const char*) ble_characteristic_command_bytes);
+         Serial.println("");
+      }
+
+      // when the central disconnects, print it out:
+      Serial.print("Disconnected from central: ");
+      Serial.println(central.address());
+   } else {
+      delay(1000);
+   }
+}
+
+void setup() {
+   setup_with_ble();
+}
+void loop() {
+   loop_with_ble();
 }
