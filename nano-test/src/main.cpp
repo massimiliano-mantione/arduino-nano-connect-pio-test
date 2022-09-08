@@ -134,6 +134,71 @@ void setup_with_vl53l0x() {
   lox.startRangeContinuous();
 }
 
+Adafruit_VL53L0X lox1 = Adafruit_VL53L0X();
+Adafruit_VL53L0X lox2 = Adafruit_VL53L0X();
+Adafruit_VL53L0X lox3 = Adafruit_VL53L0X();
+#define SHT_LOX1 2
+#define SHT_LOX2 4
+#define SHT_LOX3 6
+#define LOX1_ADDRESS 0x30
+#define LOX2_ADDRESS 0x31
+#define LOX3_ADDRESS 0x32
+
+void setup_with_vl53l0x_3() {
+  Serial.begin(115200);
+
+  // wait until serial port opens for native USB devices
+  while (! Serial) {
+    delay(1);
+  }
+
+  Serial.println("Adafruit VL53L0X reset");
+  digitalWrite(SHT_LOX1, LOW);
+  digitalWrite(SHT_LOX2, LOW);
+  digitalWrite(SHT_LOX3, LOW);
+  delay(100);
+  digitalWrite(SHT_LOX1, HIGH);
+  digitalWrite(SHT_LOX2, HIGH);
+  digitalWrite(SHT_LOX3, HIGH);
+  delay(100);
+  digitalWrite(SHT_LOX2, LOW);
+  digitalWrite(SHT_LOX3, LOW);
+  delay(100);
+
+  if (!lox1.begin(LOX1_ADDRESS)) {
+    Serial.println("Failed to boot VL53L0X 1");
+    while(1);
+  } else {
+    Serial.println("Booted VL53L0X 1");
+  }
+  delay(100);
+
+  digitalWrite(SHT_LOX2, HIGH);
+  if (!lox2.begin(LOX2_ADDRESS)) {
+    Serial.println("Failed to boot VL53L0X 2");
+    while(1);
+  } else {
+    Serial.println("Booted VL53L0X 2");
+  }
+  delay(100);
+
+  digitalWrite(SHT_LOX3, HIGH);
+  if (!lox3.begin(LOX3_ADDRESS)) {
+    Serial.println("Failed to boot VL53L0X 3");
+    while(1);
+  } else {
+    Serial.println("Booted VL53L0X 3");
+  }
+  delay(10);
+
+
+  // start continuous ranging
+  Serial.println("Start VL53L0X Continuous Ranging \n");
+  lox1.startRangeContinuous();
+  lox2.startRangeContinuous();
+  lox3.startRangeContinuous();
+}
+
 const char* ble_device_name = "BLE-TEST-DEVICE";
 const char* ble_service_uuid = "934642e9-db09-4802-90b2-aec03c8bd146";
 const char* ble_characteristic_data_uuid = "2a47b36e-3e2e-496f-9a8e-2f14313acb53";
@@ -262,6 +327,21 @@ void loop_with_vl53l0x() {
   }
 }
 
+void loop_with_vl53l0x_3() {
+   delay(20);
+   lox1.waitRangeComplete();
+   lox2.waitRangeComplete();
+   lox3.waitRangeComplete();
+   
+   Serial.print("LOX MM1 ");
+   Serial.print(lox1.readRange());
+   Serial.print(" MM2 ");
+   Serial.print(lox2.readRange());
+   Serial.print(" MM3 ");
+   Serial.print(lox3.readRange());
+   Serial.println("");
+}
+
 void loop_with_ble() {
    Serial.println("Waiting for central...");
 
@@ -305,8 +385,8 @@ void loop_with_ble() {
 }
 
 void setup() {
-   setup_with_ble();
+   setup_with_vl53l0x_3();
 }
 void loop() {
-   loop_with_ble();
+   loop_with_vl53l0x_3();
 }
