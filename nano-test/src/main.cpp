@@ -134,12 +134,13 @@ void setup_with_vl53l0x() {
   lox.startRangeContinuous();
 }
 
+const char* ble_device_name = "BLE-TEST-DEVICE";
 const char* ble_service_uuid = "934642e9-db09-4802-90b2-aec03c8bd146";
 const char* ble_characteristic_data_uuid = "2a47b36e-3e2e-496f-9a8e-2f14313acb53";
 const char* ble_characteristic_command_uuid = "2d4b86f0-2342-4d67-8734-9c2ca4b380d6";
 
-#define BLE_CHARACTERISTIC_DATA_LENGTH 500
-#define BLE_CHARACTERISTIC_COMMAND_LENGTH 50
+#define BLE_CHARACTERISTIC_DATA_LENGTH 50
+#define BLE_CHARACTERISTIC_COMMAND_LENGTH 10
 uint8_t ble_characteristic_data_bytes[BLE_CHARACTERISTIC_DATA_LENGTH + 1];
 uint8_t ble_characteristic_command_bytes[BLE_CHARACTERISTIC_COMMAND_LENGTH + 1];
 
@@ -152,9 +153,8 @@ BLECharacteristic ble_characteristic_data(
    );
 BLECharacteristic ble_characteristic_command(
       ble_characteristic_command_uuid,
-      BLEWrite,
-      BLE_CHARACTERISTIC_COMMAND_LENGTH,
-      false
+      BLERead | BLEWrite,
+      "          "
    );
 
 void setup_with_ble() {
@@ -182,11 +182,14 @@ void setup_with_ble() {
       Serial.println("starting Bluetooth® Low Energy failed!");
       while(false);
    }
-   BLE.setLocalName("BLE test device");
+   BLE.setLocalName(ble_device_name);
    BLE.setAdvertisedService(ble_service);
    BLE.addService(ble_service);
    BLE.setConnectable(true);
    BLE.advertise();
+
+   Serial.print("Local address is: ");
+   Serial.println(BLE.address());
 
    Serial.println("BLE waiting for connections");
 }
@@ -221,8 +224,6 @@ void loop_with_VL53LX()
    VL53LX_MultiRangingData_t MultiRangingData;
    VL53LX_MultiRangingData_t *pMultiRangingData = &MultiRangingData;
    uint8_t NewDataReady = 0;
-   int no_of_object_found = 0, j;
-   char report[64];
    int status;
 
    do
@@ -286,9 +287,13 @@ void loop_with_ble() {
          ble_characteristic_command_bytes[BLE_CHARACTERISTIC_COMMAND_LENGTH] = 0;
          Serial.print("tick: ");
          Serial.print(tick);
-         Serial.print(" command: ");
+         Serial.print(" written: ");
+         Serial.print(ble_characteristic_command.written());
+         Serial.print(" command: '");
          Serial.print((const char*) ble_characteristic_command_bytes);
-         Serial.println("");
+         Serial.println("'");
+         
+         delay(500);
       }
 
       // when the central disconnects, print it out:
